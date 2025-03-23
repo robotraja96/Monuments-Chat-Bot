@@ -35,7 +35,7 @@ A sophisticated chatbot application designed to provide information about monume
 
 1. Clone the repository:
    ```bash
-   git clone <repository-url>
+   git clone <https://github.com/robotraja96/Monuments-Chat-Bot.git>
    cd monuments-chatbot
    ```
 
@@ -48,7 +48,6 @@ A sophisticated chatbot application designed to provide information about monume
    ```
    GOOGLE_API_KEY=your_google_api_key
    EMAIL_USER=your_gmail_address
-   EMAIL_PASSWORD=your_email_password
    EMAIL_APP_PASSWORD=your_gmail_app_password
    EMAIL_SERVER=smtp.gmail.com
    EMAIL_PORT=587
@@ -118,4 +117,4 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## Support
 
-For support, please [add contact information or support guidelines] 
+For support, please check out my [linkedin](https://www.linkedin.com/in/raja-raman-173a082a1/), [wordpress][https://thevicariousview.wordpress.com/],[substack](https://substack.com/@vicariousviews)
