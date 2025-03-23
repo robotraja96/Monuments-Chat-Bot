@@ -1,0 +1,15 @@
+langchain_community 
+tiktoken  
+langchainhub 
+langchain 
+langgraph  
+tavily-python
+python-dotenv
+google-generativeai
+langchain-google-genai
+langchain-nomic
+langchain-text-splitters
+langchain_huggingface
+google-search-results
+flask
+flask_cors
