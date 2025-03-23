@@ -9,25 +9,26 @@ from langgraph.checkpoint.memory import MemorySaver
 from email.mime.multipart import MIMEMultipart
 
 import logging
-from typing import Annotated, Sequence, TypedDict, Optional
+from typing import Annotated, TypedDict, Optional
 
 from langgraph.graph import StateGraph, END
-from langgraph.prebuilt import create_react_agent, ToolNode, tools_condition
+from langgraph.prebuilt import ToolNode, tools_condition
 from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
 from langchain_google_genai import ChatGoogleGenerativeAI
 import random
 import re
 from langchain_community.tools.tavily_search import TavilySearchResults
 
-# Set up logging
+# Configure logging settings for debugging
 logging.basicConfig(level=logging.DEBUG)  # Changed to DEBUG for extensive logging
 logger = logging.getLogger(__name__)
 
+# Load environment variables from .env file
 import os
 from dotenv import load_dotenv
 load_dotenv()
 
-# Configure environment variables for OpenAI and email service
+# Configure environment variables for API keys and email service settings
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 EMAIL_USER = os.getenv("EMAIL_USER", "your-email@gmail.com")
 EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD", "your-app-password")
@@ -35,13 +36,15 @@ EMAIL_APP_PASSWORD = os.getenv("EMAIL_APP_PASSWORD", "your-app-password")
 EMAIL_SERVER = os.getenv("EMAIL_SERVER", "smtp.gmail.com")
 EMAIL_PORT = int(os.getenv("EMAIL_PORT", "587"))
 
-# Initialize LLM
+# Initialize Google's Generative AI model
 logger.debug("Initializing LLM with model: gemini-2.0-flash-exp")
 llm = ChatGoogleGenerativeAI(model="gemini-2.0-flash-exp", api_key=GOOGLE_API_KEY)
 
+# Initialize memory saver for conversation state
 memory = MemorySaver()
 application = None
-# Helper functions
+
+# Helper function to extract email using regex pattern
 def extract_email(text: str) -> Optional[str]:
     """Extract email from text using regex."""
     logger.debug(f"Extracting email from text: {text}")
@@ -53,7 +56,7 @@ def extract_email(text: str) -> Optional[str]:
     logger.debug("No email found")
     return None
 
-
+# Helper function to extract 6-digit OTP from text
 def extract_otp(text: str) -> Optional[str]:
     """Extract 6-digit OTP from text."""
     logger.debug(f"Extracting OTP from text: {text}")
@@ -65,7 +68,7 @@ def extract_otp(text: str) -> Optional[str]:
     logger.debug("No OTP found")
     return None
 
-
+# Function to send OTP via email using SMTP
 def send_email_with_otp(to_email: str, otp: str) -> bool:
     """Send email with OTP to the user."""
     logger.debug(f"Preparing to send OTP email to: {to_email} with OTP: {otp}")
@@ -106,9 +109,7 @@ def send_email_with_otp(to_email: str, otp: str) -> bool:
         logger.error(f"Failed to send email: {str(e)}")
         return False
 
-
-
-
+# System prompt for the monument chatbot defining its behavior and capabilities
 mon_prompt = """
 You are a Monuments Researcher, an expert in historical monuments, their history, and their geographical locations. You only discuss topics related to historical monuments, their significance, and locations.
 
@@ -149,14 +150,16 @@ Bot: Thanks for providing your email will shoot an email your way soon.
 NOTE: *ANSWER REGARDING MONUMENTS, PLACES OR ANYTHING RELATED TO MONUMENTS SHOULD BE GIVEN AFTER USING THE TOOL*
 """
 
+# Initialize system message and search tools
 sys_msg = SystemMessage(mon_prompt)
 
 search_tool = TavilySearchResults(max_results=2)
 tools = [search_tool]
 
-
+# Bind tools to the LLM
 llm_with_tools = llm.bind_tools(tools)
 
+# Define the structure for chat state
 class BasicChatBot(TypedDict):
     messages: Annotated[list, add_messages]
     otp: Optional[str]
@@ -165,22 +168,17 @@ class BasicChatBot(TypedDict):
     user_entered_otp: Optional[str]
     IsVerificationStarted: Optional[bool]
 
-
-
+# Agent function to handle monument-related queries
 def monument_agent(state: BasicChatBot):
     logger.debug("Entering monument_agent...")
     
     messages = state["messages"]
     return {"messages": [llm_with_tools.invoke([sys_msg] + messages)]}
-   
 
-
+# Agent function to handle email and OTP verification process   
 def verification_agent(state: BasicChatBot):
     logger.debug("Entering verification_agent...")
-    # logging.info(f"State: {state}")
-
     
-        
     if state["user_entered_otp"]:
         logger.debug("User entered OTP.")
         entered_otp = state["user_entered_otp"]
@@ -196,7 +194,7 @@ def verification_agent(state: BasicChatBot):
     elif state["user_email"]:
         if not state["user_entered_otp"]:
             logger.debug("User email detected, starting verification...")
-            # state["IsVerification_Started"] = True
+           
             user_email = state["user_email"]
             rand_otp = state["otp"]
             
@@ -214,10 +212,7 @@ def verification_agent(state: BasicChatBot):
         
         return {"messages": [AIMessage("Please provide an email address to verify your email")]}
 
-
-# Node
-
-
+# Router function to direct conversation flow based on user input
 def router(state: BasicChatBot):
     logger.debug("Entering router...")
 
@@ -229,7 +224,6 @@ def router(state: BasicChatBot):
 
     if user_entered_email:
         logger.info("User entered email.")
-        # state["user_email"] = user_entered_email
         logger.debug(f"User email is: {user_entered_email}")
         return "email_verification"
     elif user_entered_otp:
@@ -239,14 +233,12 @@ def router(state: BasicChatBot):
             logger.debug("OTP verified.")
             return "email_verification"
 
-        # state["user_entered_otp"] = user_entered_otp
         return "email_verification"
     else:
         logger.debug("No email or OTP detected. Routing to monuments_knowledge.")
         return "monuments_knowledge"
 
-
-# Define the LangGraph workflow
+# Function to create and configure the conversation workflow graph
 def create_graph():
     logger.debug("Creating LangGraph workflow...")
     global memory
@@ -254,7 +246,7 @@ def create_graph():
 
     workflow.add_node("reasoner", monument_agent)
     workflow.add_node("email_verification", verification_agent)
-    # Add nodes
+
     workflow.add_node("tools", ToolNode(tools)) # for the tools
 
     logger.debug("Adding conditional edges...")
@@ -272,24 +264,20 @@ def create_graph():
     logger.debug("Workflow compilation complete.")
     return app
 
-
-
-
-
-
-# Initialize Flask app
+# Initialize Flask application
 app = Flask(__name__)
 app.secret_key = os.urandom(24)  # Secret key for session management
 
 # Create the graph application
-
 application = create_graph()
 config = {"configurable": {"thread_id": "1"}}
 
+# Route for the main page
 @app.route('/')
 def index():
     return render_template('index.html')
 
+# Route to initialize a new chat session
 @app.route('/init_session', methods=['POST'])
 def init_session():
     """Initialize a new chat session"""
@@ -301,6 +289,7 @@ def init_session():
     logger.debug(f"New session initialized with OTP: {session['random_otp']}")
     return jsonify({"status": "success", "message": "Session initialized"})
 
+# Main chat endpoint to handle user messages
 @app.route('/chat', methods=['POST'])
 def chat():
     """Process user message and return bot response"""
@@ -389,7 +378,7 @@ def chat():
         "session_complete": session.get('otp_verified', False)
     })
 
-
+# Route to reset the chat session
 @app.route('/reset_session', methods=['POST'])
 def reset_session():
     """Reset the entire chat session"""
@@ -411,14 +400,6 @@ def reset_session():
     logger.debug("Session completely reset")
     return jsonify({"status": "success", "message": "Session reset"})
 
+# Run the Flask application
 if __name__ == '__main__':
-    # Make sure the templates folder exists
-    # if not os.path.exists('templates'):
-    #     os.makedirs('templates')
-    
-    # # Save the index.html to templates folder
-    # with open('templates/index.html', 'w') as f:
-    #     with open('index.html', 'r') as source:
-    #         f.write(source.read())
-    
     app.run(host='0.0.0.0', debug=True, port=8080)

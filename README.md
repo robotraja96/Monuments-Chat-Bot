@@ -117,4 +117,4 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## Support
 
-For support, please check out my [linkedin](https://www.linkedin.com/in/raja-raman-173a082a1/), [wordpress][https://thevicariousview.wordpress.com/],[substack](https://substack.com/@vicariousviews)
+For support, please check out my [linkedin](https://www.linkedin.com/in/raja-raman-173a082a1/), [WordPress](https://thevicariousview.wordpress.com/),[Substack](https://substack.com/@vicariousviews)
