@@ -11,19 +11,6 @@ A sophisticated chatbot application designed to provide information about monume
 - Secure session management
 - Responsive web interface
 
-## Tech Stack
-
-- **Backend Framework**: Flask
-- **AI/ML**: 
-  - Google Gemini 2.0 Flash
-  - LangGraph for conversation flow
-  - LangChain for AI interactions
-- **Frontend**: HTML, JavaScript
-- **External Services**:
-  - Tavily Search API for real-time information
-  - SMTP for email services
-- **Security**: Session-based authentication with email OTP
-
 ## Prerequisites
 
 - Python 3.8 or higher
@@ -102,6 +89,19 @@ monuments-chatbot/
 │   └── index.html     # Frontend template
 └── .env               # Environment variables (create this)
 ```
+
+## Tech Stack
+
+- **Backend Framework**: Flask
+- **AI/ML**: 
+  - Google Gemini 2.0 Flash
+  - LangGraph for conversation flow
+  - LangChain for AI interactions
+- **Frontend**: HTML, JavaScript
+- **External Services**:
+  - Tavily Search API for real-time information
+  - SMTP for email services
+- **Security**: Session-based authentication with email OTP
 
 ## Security Features
 
