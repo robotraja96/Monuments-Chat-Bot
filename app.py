@@ -353,7 +353,7 @@ def chat():
     elif (extract_otp(user_message) or otp_length_check(user_message) > 1) and session.get('IsVerificationStarted', False):
         user_entered_otp = extract_otp(user_message)
 
-        # ✅ Check if OTP contains exactly 6 digits
+        # Check if OTP contains exactly 6 digits
         if otp_length_check(user_message) != 6:
             logging.info("Entered length check condition")
             return jsonify({
