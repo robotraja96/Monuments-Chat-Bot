@@ -56,6 +56,17 @@ def extract_email(text: str) -> Optional[str]:
     logger.debug("No email found")
     return None
 
+def otp_length_check(text: str) -> bool:
+    """
+    Checks if the input contains exactly 6 digits.
+    Returns True if the OTP is valid, otherwise False.
+    """
+    digits = re.findall(r'\d+', text)  # Extract digits only
+    otp_candidate = ''.join(digits)  # Combine digit sequences
+
+    # Check if the OTP is exactly 6 digits
+    return len(otp_candidate)
+
 # Helper function to extract 6-digit OTP from text
 def extract_otp(text: str) -> Optional[str]:
     """Extract 6-digit OTP from text."""
@@ -112,24 +123,28 @@ def send_email_with_otp(to_email: str, otp: str) -> bool:
 # System prompt for the monument chatbot defining its behavior and capabilities
 mon_prompt = """
 You are a Monuments Researcher, an expert in historical monuments, their history, and their geographical locations. You only discuss topics related to historical monuments, their significance, and locations.
-
+You also have ability to send email to users an OTP and verify it.
+IsEmailVerificationStarted: {}
 TASK: If the user mentions names of places, you should use the tools at your disposal to:
     - Identify a historical monument near that location.
     - Provide a brief history about it.
     - Mention how far it is from the specified place.
     - Your goal is to subtly and politely request the user's email so you can send them monument-related details, travel tips, or additional information.
+    - If
 
-Strict Guidelines:
+STRICT GUIDELINES:
 
-    - If the user asks about general, personal, or derogatory topics, remind them that you are only a Monuments Conversational Bot and that you specialize in monuments, travel, and history.
-    - Always stick to monuments and places; do not entertain unrelated discussions.
-    - You should guide the user to provide their email address so that you can send details. Persuade them to your best if they do not provide it. If they refuse plainly say "No problem. Thank you, Have a nice day". But do this only after trying a few times to get their email.
+    - If the user asks something not relevant to monument, understand what they are saying and then reply that you are a monuments bot and you only talk about, monuments, their history and locations and significance.
+    - Always stick to monuments and places; Any unrelated topics should be handled in a fun but strict way.
+    - Guide the user slowly to provide their emails. First converse with them normally and then ask them for email details to provide detailed information on the queries.
     - When using tools, only query for monument details based on the relevant user-provided information.
-    - Do not ask user for any other ways of sending. Email is the only way to send details.
+    - Email is the only way to send details. Do not suggest any other methods
 
 CRITICAL INSTRUCTIONS:
     - Do not ask for the user's email directly. First converse with them, ask leading question and provide suggestions about travel plans (ONLY RELATED TO HISTORICAL MONUMENTS) and clarify their queries. Once they are satisfied with the conversation, you can ask for their email.
     - Do not provide any information about the monuments directly. Use the tools to provide the information.
+    - **Do not ever say you cant send email or verify email address. If the user mentions something about email, tell them that they can send their email and you will verify it.**
+    - You can verify email and send otp. Never say you cannot verify or send OTP
 
 SAMPLE CONVERSATION BETWEEN BOT AND USER:
 Bot: Hey I am a historical agent AI, You can ask anything around it.
@@ -147,11 +162,15 @@ suggest you share your email and I can share lot of places to visit around.
 User, Thanks, my email is abc@xyz.com
 Bot: Thanks for providing your email will shoot an email your way soon.
 
-NOTE: *ANSWER REGARDING MONUMENTS, PLACES OR ANYTHING RELATED TO MONUMENTS SHOULD BE GIVEN AFTER USING THE TOOL*
+NOTES: 
+    - *ANSWER REGARDING MONUMENTS, PLACES OR ANYTHING RELATED TO MONUMENTS SHOULD BE GIVEN AFTER USING THE TOOL*
+    - If IsEmailVerificationStarted is True, then you should only ask the user the OTP. If they try to talk something else, pls remind them politely to first verify the OTP. 
+    - If IsEmailVerificationStarted is False, then you must converse like a Monuments Bot only.
+
 """
 
 # Initialize system message and search tools
-sys_msg = SystemMessage(mon_prompt)
+
 
 search_tool = TavilySearchResults(max_results=2)
 tools = [search_tool]
@@ -173,6 +192,8 @@ def monument_agent(state: BasicChatBot):
     logger.debug("Entering monument_agent...")
     
     messages = state["messages"]
+    verification_boolean = state["IsVerificationStarted"]
+    sys_msg = SystemMessage(mon_prompt.format(verification_boolean))
     return {"messages": [llm_with_tools.invoke([sys_msg] + messages)]}
 
 # Agent function to handle email and OTP verification process   
@@ -285,6 +306,7 @@ def init_session():
     session['otp_verified'] = False
     session['user_email'] = None
     session['messages'] = []
+    session["IsVerificationStarted"] = False
     
     logger.debug(f"New session initialized with OTP: {session['random_otp']}")
     return jsonify({"status": "success", "message": "Session initialized"})
@@ -326,9 +348,18 @@ def chat():
         }, config=config)
         
         bot_response = response["messages"][-1].content
+        session["IsVerificationStarted"] = True
         
-    elif extract_otp(user_message):
+    elif (extract_otp(user_message) or otp_length_check(user_message) > 1) and session.get('IsVerificationStarted', False):
         user_entered_otp = extract_otp(user_message)
+
+        # ✅ Check if OTP contains exactly 6 digits
+        if otp_length_check(user_message) != 6:
+            logging.info("Entered length check condition")
+            return jsonify({
+                "response": "Invalid OTP. Please provide a valid 6-digit OTP.",
+                "session_complete": False
+            })
         
         response = application.invoke({
             "messages": [HumanMessage(user_message)], 
