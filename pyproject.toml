@@ -1,0 +1,21 @@
+[project]
+name = "monuments-chat-bot"
+version = "0.1.0"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.115.12",
+    "google-generativeai>=0.8.5",
+    "google-search-results>=2.4.2",
+    "jinja2>=3.1.6",
+    "langchain>=0.3.25",
+    "langchain-community>=0.3.24",
+    "langchain-google-genai>=2.0.10",
+    "langchain-nomic>=0.1.4",
+    "langchain-text-splitters>=0.3.8",
+    "langchainhub>=0.1.21",
+    "langgraph>=0.4.5",
+    "python-dotenv>=1.1.0",
+    "tavily-python>=0.7.2",
+    "tiktoken>=0.9.0",
+    "uvicorn>=0.34.2",
+]
