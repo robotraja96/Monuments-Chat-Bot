@@ -70,7 +70,7 @@ A sophisticated chatbot application designed to provide information about monume
 
 ## Running the Application
 
-1. Start the fastapi server:
+1. Start the fastapi server: <br>
    i) Shift to the src folder
    ```bash
    cd src
