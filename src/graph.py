@@ -10,14 +10,11 @@ from langchain_core.prompts import PromptTemplate
 from langgraph.checkpoint.memory import InMemorySaver
 from langchain_community.tools.tavily_search import TavilySearchResults
 from langgraph.graph import StateGraph, END
-from langchain_core.messages import HumanMessage
 from langchain_google_genai import ChatGoogleGenerativeAI
 
 # Custom imports
-from utils import message_parser
-from prompts import mon_prompt, verification_prompt
+from src.prompts import mon_prompt, verification_prompt
 
-# FastAPI imports
 
 # Configure logging settings for debugging
 logging.basicConfig(level=logging.DEBUG)  # Changed to DEBUG for extensive logging
@@ -66,7 +63,7 @@ def monument_agent(state: BasicChatBot):
     messages = state["messages"]
     agent = create_react_agent(model=llm, tools=tools, prompt=mon_prompt)
     response = agent.invoke({"messages":messages})
-    logger.debug(f"Agent response: {response}")
+    # logger.debug(f"Agent response: {response}")
     return {"messages": response["messages"]}
 
 # Agent function to handle email and OTP verification process   
